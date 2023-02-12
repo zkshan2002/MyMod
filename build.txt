@@ -1,0 +1,3 @@
+displayName = My Mod
+author = Tsura
+version = 0.1

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\tModLoader.targets" />
+  <PropertyGroup>
+    <AssemblyName>MyMod</AssemblyName>
+    <TargetFramework>net6.0</TargetFramework>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Contents\NPCs\Clones\**" />
+    <EmbeddedResource Remove="Contents\NPCs\Clones\**" />
+    <None Remove="Contents\NPCs\Clones\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Contents\Items\Consumbles\BossSummoningItems\BrainCloneSummon.cs" />
+    <Compile Remove="Contents\Items\Consumbles\BossSummoningItems\EOCCloneSummon.cs" />
+    <Compile Remove="Contents\Items\Consumbles\BossSummoningItems\TwinsCloneSummon.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Contents\Items\Consumbles\BossSummoningItems\BrainCloneSummon.png" />
+    <None Remove="Contents\Items\Consumbles\BossSummoningItems\EOCCloneSummon.png" />
+    <None Remove="Contents\Items\Consumbles\BossSummoningItems\TwinsCloneSummon.png" />
+    <None Remove="Contents\NPCs\Bosses\MachineBrain\TestNPC.c" />
+    <None Remove="Pasteboard.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="tModLoader.CodeAssist" Version="0.1.*" />
+  </ItemGroup>
+</Project>
