@@ -110,8 +110,8 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
             State = AllState.ride;
             InvadeState = AllInvadeState.none;
 
-            rotationOffset = MathHelper.Pi;
-            rotationCorrectionFactor = 2;
+            spriteRotationDeg = 180;
+            rotCorrectionFactor = 2;
 
             SetNoCollideDamage(time: 1);
 
@@ -143,9 +143,9 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
         private readonly int SpitProjType = ProjectileID.GoldenShowerHostile;
 
         private void AttackSegmentAlert(Vector2 pos, int lasts) {
-            var handle = NewProjectile(AlertProjType, NPC.Center, Vector2.Zero);
-            if (handle >= 0) {
-                var modProj = Main.projectile[handle].ModProjectile as AlertLine;
+            var proj = NewProjectile(AlertProjType, NPC.Center, Vector2.Zero);
+            if (proj != null) {
+                var modProj = proj.ModProjectile as AlertLine;
                 modProj.Set(pos, lasts, maxAlpha: 0.4f);
             }
         }
@@ -162,9 +162,9 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
         }
 
         internal void AttackDeathrayZapAlert(float rad, int lasts) {
-            var handle = NewProjectile(AlertProjType, NPC.Center);
-            if (handle >= 0) {
-                var modProj = Main.projectile[handle].ModProjectile as AlertLine;
+            var proj = NewProjectile(AlertProjType, NPC.Center);
+            if (proj != null) {
+                var modProj = proj.ModProjectile as AlertLine;
                 int width = MachineDeathray.GetWidth();
                 TimeRatioFunc alphaTRF = (timeRatio) => {
                     if (timeRatio < 0.25f) {
@@ -182,17 +182,17 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
         }
 
         internal void AttackDeathrayZap(float rad, int lasts) {
-            var handle = NewProjectile(DeathrayProjType, NPC.Center, damage: owner.GetDamage("Deathray"));
-            if (handle >= 0) {
-                var modProj = Main.projectile[handle].ModProjectile as MachineDeathray;
+            var proj = NewProjectile(DeathrayProjType, NPC.Center, damage: owner.GetDamage("Deathray"));
+            if (proj != null) {
+                var modProj = proj.ModProjectile as MachineDeathray;
                 modProj.Set(rad, lasts, NPC.whoAmI, shotOffset: NPC.width * 0.5f);
             }
         }
 
         internal void AttackDeathrayLerpAlert(float rad, LerpData<float> data) {
-            var handle = NewProjectile(AlertProjType, NPC.Center);
-            if (handle >= 0) {
-                var modProj = Main.projectile[handle].ModProjectile as AlertLine;
+            var proj = NewProjectile(AlertProjType, NPC.Center);
+            if (proj != null) {
+                var modProj = proj.ModProjectile as AlertLine;
                 int width = MachineDeathray.GetWidth();
                 TimeRatioFunc alphaTRF = (timeRatio) => {
                     if (timeRatio < 0.25f) {
@@ -210,9 +210,9 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
         }
 
         internal void AttackDeathrayLerp(float rad, LerpData<float> data) {
-            var handle = NewProjectile(DeathrayProjType, NPC.Center, damage: owner.GetDamage("Deathray"));
-            if (handle >= 0) {
-                var modProj = Main.projectile[handle].ModProjectile as MachineDeathray;
+            var proj = NewProjectile(DeathrayProjType, NPC.Center, damage: owner.GetDamage("Deathray"));
+            if (proj != null) {
+                var modProj = proj.ModProjectile as MachineDeathray;
                 modProj.Set(rad, data, NPC.whoAmI, shotOffset: NPC.width * 0.5f);
             }
         }
@@ -272,9 +272,9 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
         private void ActRide() {
             offsetHandler.Update();
 
-            TeleportTo(owner.GetRidePos(offset), resetVel: true);
+            Teleport2(owner.GetRidePos(offset), resetVel: true);
             if (offset.stare) {
-                RotationStare();
+                RotStare();
             }
             else {
                 Rotation = offset.phi;
@@ -287,7 +287,7 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
         private int invadesToDo;
 
         private void SetInvade(int prejudgeTime, AllInvadeState state, int invadesToDo) {
-            attackPos = PrejudgePlayerTargetPos(prejudgeTime);
+            attackPos = PrejudgeTargetPos(prejudgeTime);
             attackPos += Utils.Radius(Utils.RadNoise(180), Utils.FloatNoise(160));
             float theta = 0, rou = 0;
             switch (state) {
@@ -348,13 +348,13 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
                 }
             }
             if (timer < flyTime) {
-                RotationStare(attackPos);
+                RotStare(attackPos);
                 if (isInvadeFast) {
                     float ratio = 1f / (flyTime - timer);
-                    TeleportTo(Vector2.Lerp(NPC.Center, invadePos, ratio), resetVel: true);
+                    Teleport2(Vector2.Lerp(NPC.Center, invadePos, ratio), resetVel: true);
                 }
                 else {
-                    NPC.velocity = Vec2Target(invadePos, flySpeed);
+                    NPC.velocity = Vec2Rescale(invadePos, flySpeed);
                 }
             }
             if (timer == flyTime) {
@@ -374,45 +374,45 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
 
                 var distance = Vector2.Distance(NPC.Center, owner.NPC.Center);
                 flyTime = (int)MathHelper.Clamp(distance / flySpeed, 1, retreatTimeLimit);
-                NPC.velocity = Vec2Target(owner.NPC.Center, flySpeed);
+                NPC.velocity = Vec2Rescale(owner.NPC.Center, flySpeed);
                 SetAlphaLerp(0, flyTime);
             }
             if (timer == flyTime) {
                 //Main.NewText($"Guard {index} teleport to init offset {MathHelper.ToDegrees(MachineBrain.GetGuardInitOffset(index).theta)}");
                 SetOffset(MachineBrain.GetGuardInitOffset(index));
-                TeleportTo(owner.GetRidePos(offset), resetVel: true);
+                Teleport2(owner.GetRidePos(offset), resetVel: true);
                 SetAlphaLerp(1, 10);
             }
 
-            RotationStare();
+            RotStare();
 
             return timer >= flyTime;
         }
 
         private void MoveHover() {
-            VelocityDecay(0.2f, 0.1f);
+            VelDecay(0.2f, 0.1f);
         }
 
         private bool ActCharge(int timer, float chargeSpeed, int chargeLasts, int recoverLasts, float clipAt = 0.1f, bool super = false) {
             int chargeStart = 0, recoverStart = chargeStart + chargeLasts, actEnd = recoverStart + recoverLasts;
 
             if (timer == chargeStart) {
-                var pos = PrejudgePlayerTargetPos(Main.rand.Next(0, 10 + 1));
-                NPC.velocity = Vec2Target(pos, chargeSpeed);
+                var pos = PrejudgeTargetPos(Main.rand.Next(0, 10 + 1));
+                NPC.velocity = Vec2Rescale(pos, chargeSpeed);
                 if (super) {
-                    pos = NPC.Center + Vec2Target(pos, chargeSpeed * chargeLasts);
+                    pos = NPC.Center + Vec2Rescale(pos, chargeSpeed * chargeLasts);
                     AttackSegmentAlert(pos, 10);
                 }
             }
             if (timer < recoverStart) {
-                RotationCharge();
+                RotCharge();
             }
             if (timer >= recoverStart && timer < actEnd) {
-                VelocityDecay(0.9f, 0.1f);
+                VelDecay(0.9f, 0.1f);
                 if (NPC.velocity.Length() < clipAt) {
                     return true;
                 }
-                RotationStare();
+                RotStare();
             }
 
             return timer >= actEnd;
@@ -427,7 +427,7 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
 
             if (timer < delay) {
                 MoveHover();
-                RotationStare();
+                RotStare();
             }
             if (timer == delay) {
                 chargesToDo = 3;
@@ -454,7 +454,7 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
 
             if (timer < delay1) {
                 NPC.velocity = Vector2.Zero;
-                RotationStare();
+                RotStare();
             }
             if (timer == delay1) {
                 chargesToDo = 3;
@@ -482,7 +482,7 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
         private float attackRad;
         private bool ActInvadeAttackLaserFork(int timer) {
             MoveHover();
-            RotationStare(attackPos);
+            RotStare(attackPos);
 
             const int delay1 = 20, shootLasts = 45, delay2 = 20;
             const int shootStart = delay1, shootEnd = shootStart + shootLasts, actEnd = shootEnd + delay2;
@@ -535,7 +535,7 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
 
         private bool ActInvadeAttackDeathrayZap(int timer) {
             MoveHover();
-            RotationStare(attackPos);
+            RotStare(attackPos);
 
             const int delay1 = 20, alertLasts = 30, zapLasts = 10, delay2 = 20;
             const int alertStart = delay1, zapStart = alertStart + alertLasts, zapEnd = zapStart + zapLasts, actEnd = zapEnd + delay2;
@@ -552,25 +552,25 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
 
         private bool ActInvadeAttackDeathrayStorm(int timer) {
             MoveHover();
-            RotationStare(attackPos);
+            RotStare(attackPos);
 
             const int delay1 = 20, delay2 = 20;
             // 0-20, 20-30; 20-40, 40-50; 60-80, 80-120
             if (timer == delay1 + 0) {
-                attackRad = Utils.ClipRad(RotationTo(PrejudgePlayerTargetPos(0)) + Utils.RadNoise(15));
+                attackRad = Utils.ClipRad(Rot2(PrejudgeTargetPos(0)) + Utils.RadNoise(15));
                 AttackDeathrayZapAlert(attackRad, 20);
             }
             if (timer == delay1 + 20) {
                 AttackDeathrayZap(attackRad, 10);
 
-                attackRad = Utils.ClipRad(RotationTo(PrejudgePlayerTargetPos(10)) + Utils.RadNoise(15));
+                attackRad = Utils.ClipRad(Rot2(PrejudgeTargetPos(10)) + Utils.RadNoise(15));
                 AttackDeathrayZapAlert(attackRad, 20);
             }
             if (timer == delay1 + 40) {
                 AttackDeathrayZap(attackRad, 10);
             }
             if (timer == delay1 + 50) {
-                attackRad = Utils.ClipRad(RotationTo(PrejudgePlayerTargetPos(20)) + Utils.RadNoise(25));
+                attackRad = Utils.ClipRad(Rot2(PrejudgeTargetPos(20)) + Utils.RadNoise(25));
                 float rad = Utils.ClipRad(attackRad + MathHelper.ToRadians(15));
                 AttackDeathrayLerpAlert(rad, new LerpData<float>(attackRad, 20, LerpFuncSet.Radian, TimeRatioFuncSet.SinLerpConvex));
                 rad = Utils.ClipRad(attackRad - MathHelper.ToRadians(15));
@@ -675,7 +675,7 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
         private bool ActFollow(int timer) {
             float flySpeed = 15f, beta = 1 / 10f;
             if (timer == 0) {
-                float theta = Utils.ClipRad(RotationTo(PlayerTarget.Center) + Utils.RadNoise(45) + MathHelper.ToRadians(180));
+                float theta = Utils.ClipRad(Rot2(PlayerTarget.Center) + Utils.RadNoise(45) + MathHelper.ToRadians(180));
                 float rou = Main.rand.Next(320, 640 + 1);
                 followPos = Utils.Radius(theta, rou);
                 followTime = 0;
@@ -683,7 +683,7 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
             }
 
             var pos = PlayerTarget.Center + followPos;
-            RotationStare();
+            RotStare();
             FlyMomentum(pos, flySpeed, beta);
 
             if (near) {
@@ -701,7 +701,7 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
         private int spitAt;
         private void AttackLaserAndSpit() {
             if (attackTimer == spitAt) {
-                float rad = Utils.ClipRad(RotationTo(PlayerTarget.Center) + Utils.RadNoise(30));
+                float rad = Utils.ClipRad(Rot2(PlayerTarget.Center) + Utils.RadNoise(30));
                 AttackSpit(rad);
                 if (Main.rand.NextBool(3)) {
                     spitAt = Main.rand.Next(spitAt + 1, attackPeriod + 1);
@@ -711,7 +711,7 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
                 }
             }
             if (attackTimer == attackPeriod) {
-                float rad = Utils.ClipRad(RotationTo(PlayerTarget.Center) + Utils.RadNoise(5));
+                float rad = Utils.ClipRad(Rot2(PlayerTarget.Center) + Utils.RadNoise(5));
                 AttackLaser(rad);
             }
             if (attackTimer >= attackPeriod) {
@@ -722,7 +722,7 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
         private Vector2 GetPosNear(int near, int far, int prejudgeTime) {
             float theta = Utils.ClipRad(Utils.RadNoise(180));
             float rou = Main.rand.Next(near, far + 1);
-            var pos = PrejudgePlayerTargetPos(prejudgeTime);
+            var pos = PrejudgeTargetPos(prejudgeTime);
             pos += Utils.Radius(theta, rou);
             return pos;
         }
@@ -749,7 +749,7 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
                 }
             }
             if (timer == delayStart) {
-                TeleportTo(teleportPos.Value, resetVel: true);
+                Teleport2(teleportPos.Value, resetVel: true);
                 teleportPos = null;
                 SetAlphaLerp(1, fadeLasts);
             }

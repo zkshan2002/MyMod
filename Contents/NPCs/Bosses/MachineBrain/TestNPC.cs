@@ -12,7 +12,7 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
     public class TestNPC : NPCBase {
 
         protected override bool Init() {
-            rotationOffset = MathHelper.Pi * 0.5f;
+            spriteRotationDeg = 90;
             return true;
         }
 

@@ -11,14 +11,18 @@ using ReLogic.Content;
 
 namespace MyMod.Contents.NPCs {
     public abstract class NPCBase : ModNPC {
-        // Init
+
+        protected virtual string Workdir => GetType().Namespace.Replace('.', '/');
+
         protected bool inited = false;
         protected virtual bool Init() {
             alphaHandler = new AsyncLerper<float>(NPC.alpha);
             return true;
         }
         public override bool PreAI() {
-            if (!base.PreAI()) return false;
+            if (!base.PreAI()) {
+                return false;
+            }
             if (!inited) {
                 inited = true;
                 if (!Init()) {
@@ -29,9 +33,6 @@ namespace MyMod.Contents.NPCs {
             return true;
         }
         
-
-        protected virtual string Workdir => GetType().Namespace.Replace('.', '/');
-
         protected void Kill() {
             NPC.active = false;
             NPC.netUpdate = true;
@@ -58,7 +59,6 @@ namespace MyMod.Contents.NPCs {
             }
         }
 
-        // Target
         internal Player PlayerTarget {
             get {
                 if (NPC.target < 0 || NPC.target >= Main.maxPlayers) {
@@ -67,9 +67,8 @@ namespace MyMod.Contents.NPCs {
                 return Main.player[NPC.target];
             }
         }
-        protected bool RetargetPlayers(bool force = false) {
-            if (force || NPC.target < 0 || NPC.target >= Main.maxPlayers || Main.player[NPC.target].dead ||
-                !Main.player[NPC.target].active) {
+        protected bool TargetPlayer(bool force = false) {
+            if (force || NPC.target < 0 || NPC.target >= Main.maxPlayers || Main.player[NPC.target].dead || !Main.player[NPC.target].active) {
                 NPC.TargetClosest();
                 if (NPC.target < 0 || NPC.target == Main.maxPlayers) {
                     return false;
@@ -77,24 +76,24 @@ namespace MyMod.Contents.NPCs {
             }
             return true;
         }
-        // Utilities
-        protected Vector2 PrejudgePlayerTargetPos(int prejudgeTime) {
+        
+        protected Vector2 PrejudgeTargetPos(int prejudgeTime) {
             return PlayerTarget.Center + PlayerTarget.velocity * prejudgeTime;
         }
-        protected Vector2 Vec2Target(Vector2 target, float scale) {
+        protected Vector2 Vec2Rescale(Vector2 target, float scale) {
             return (target - NPC.Center).SafeNormalize(-Vector2.UnitY) * scale;
         }
-        protected float RotationTo(Vector2 target) {
-            return Utils.ClipRad(Vec2Target(target, 1f).ToRotation());
+        protected float Rot2(Vector2 target) {
+            return Utils.ClipRad(Vec2Rescale(target, 1f).ToRotation());
         }
-        // Movement
-        protected void TeleportTo(Vector2 pos, bool resetVel = false) {
+
+        protected void Teleport2(Vector2 pos, bool resetVel = false) {
             NPC.position = pos - new Vector2(NPC.width, NPC.height) * 0.5f;
             if (resetVel) {
                 NPC.velocity = Vector2.Zero;
             }
         }
-        protected void VelocityDecay(float ratio, float? clip = null) {
+        protected void VelDecay(float ratio, float? clip = null) {
             NPC.velocity *= ratio;
             if (clip.HasValue) {
                 if (Math.Abs(NPC.velocity.X) < clip.Value) {
@@ -105,7 +104,7 @@ namespace MyMod.Contents.NPCs {
                 }
             }
         }
-        protected void VelocityCorrection(Vector2 target, float delta) {
+        protected void VelCorrection(Vector2 target, float delta) {
             if (NPC.velocity.X < target.X) {
                 NPC.velocity.X += delta;
                 if (NPC.velocity.X < 0f && target.X > 0f) {
@@ -131,47 +130,44 @@ namespace MyMod.Contents.NPCs {
                 }
             }
         }
-        protected void FlySimple(Vector2 target, float speed, float delta) {
-            VelocityCorrection(Vec2Target(target, speed), delta);
+        protected void FlySimple(Vector2 targetPos, float speed, float delta) {
+            VelCorrection(Vec2Rescale(targetPos, speed), delta);
         }
-        protected void FlyUniform(Vector2 target, float speed) {
-            Vector2 toTarget = target - NPC.Center;
+        
+        protected void FlyUniform(Vector2 targetPos, float speed) {
+            Vector2 toTarget = targetPos - NPC.Center;
             if (toTarget.Length() < speed) {
                 NPC.velocity = toTarget;
             }
             else {
-                NPC.velocity = Vec2Target(target, speed);
+                NPC.velocity = Vec2Rescale(targetPos, speed);
             }
         }
-        protected void VelocitySoftUpdate(Vector2 target, float beta) {
-            NPC.velocity = Vector2.Lerp(NPC.velocity, target, beta);
+        
+        protected void VelSoftUpdate(Vector2 targetVel, float beta) {
+            NPC.velocity = Vector2.Lerp(NPC.velocity, targetVel, beta);
         }
-        protected void FlyMomentum(Vector2 target, float speed, float beta) {
-            VelocitySoftUpdate(Vec2Target(target, speed), beta);
+        protected void FlyMomentum(Vector2 targetPos, float speed, float beta) {
+            VelSoftUpdate(Vec2Rescale(targetPos, speed), beta);
         }
         // Rotation
-        protected float rotationOffset = 0;
+        protected int spriteRotationDeg = 0;
         internal float Rotation {
-            get => Utils.ClipRad(NPC.rotation + rotationOffset);
-            set => NPC.rotation = Utils.ClipRad(value - rotationOffset);
+            get => Utils.ClipRad(NPC.rotation + MathHelper.ToRadians(spriteRotationDeg));
+            set => NPC.rotation = Utils.ClipRad(value - MathHelper.ToRadians(spriteRotationDeg));
         }
-        protected void RotationCharge() {
+        protected void RotCharge() {
             Rotation = Utils.ClipRad(NPC.velocity.ToRotation());
         }
 
-        protected float rotationCorrectionFactor;
-        protected void RotationCorrection(float target, float? deltaScale = null) {
-            float _deltaScale = deltaScale ?? rotationCorrectionFactor;
-            Rotation = Utils.RotationCorrection(Rotation, target, _deltaScale);
+        protected float rotCorrectionFactor;
+        protected void RotCorrection(float target, float? deltaScale = null) {
+            Rotation = Utils.RotationCorrection(Rotation, target, deltaScale ?? rotCorrectionFactor);
         }
-        protected float GetRotationStare(Vector2? pos = null) {
-            var _pos = pos ?? PlayerTarget.Center;
-            return Utils.ClipRad((_pos - NPC.Center).ToRotation());
+        protected void RotStare(Vector2? target = null, float? deltaScale = null) {
+            RotCorrection(Rot2(target ?? PlayerTarget.Center), deltaScale);
         }
-        protected void RotationStare(Vector2? target = null, float? deltaScale = null) {
-            RotationCorrection(GetRotationStare(target), deltaScale);
-        }
-        // Frame
+
         protected void LoopFrame(int frameHeight, int firstFrame, int lastFrame, int frameLasts) {
             if (NPC.frame.Y < firstFrame * frameHeight) {
                 NPC.frame.Y = firstFrame * frameHeight;
@@ -185,7 +181,7 @@ namespace MyMod.Contents.NPCs {
                 }
             }
         }
-        // Alpha
+
         protected float MaxAlpha = 1f;
         internal float Alpha {
             get => (1 - NPC.alpha / 255f) / MaxAlpha;
@@ -214,37 +210,35 @@ namespace MyMod.Contents.NPCs {
             Alpha = alphaHandler.Value;
             base.PostAI();
         }
-        // Spawn
-        protected int NewNPC(int type, Vector2 pos, Vector2? vel = null, float ai0 = 0, float ai1 = 0, float ai2 = 0, float ai3 = 0, int target = 255) {
+
+        protected NPC NewNPC(int type, Vector2 pos, Vector2? vel = null, float ai0 = 0, float ai1 = 0, float ai2 = 0, float ai3 = 0, int target = 255) {
             if (Main.netMode != NetmodeID.MultiplayerClient) {
                 var entitySource = NPC.GetSource_FromAI();
                 int handle = NPC.NewNPC(entitySource, (int)pos.X, (int)pos.Y, type, ai0: ai0, ai1: ai1, ai2: ai2, ai3: ai3, Target: target);
-                if (handle >= Main.maxNPCs) {
-                    return -1;
+                if (handle < 0 || handle >= Main.maxNPCs) {
+                    return null;
                 }
-                var minion = Main.npc[handle];
+                var npc = Main.npc[handle];
                 if (vel.HasValue) {
-                    minion.velocity = vel.Value;
+                    npc.velocity = vel.Value;
                 }
                 if (Main.netMode == NetmodeID.Server) {
                     NetMessage.SendData(MessageID.SyncNPC, -1, -1, null, handle);
                 }
-                return handle;
+                return npc;
             }
-
-            return -1;
+            return null;
         }
-        protected int NewProjectile(int type, Vector2 pos, Vector2? vel = null, int damage = 0, float knockback = 0f, float ai0 = 0, float ai1 = 0) {
+        protected Projectile NewProjectile(int type, Vector2 pos, Vector2? vel = null, int damage = 0, float knockback = 0f, float ai0 = 0, float ai1 = 0) {
             if (Main.netMode != NetmodeID.MultiplayerClient) {
                 var entitySource = NPC.GetSource_FromAI();
-                var _vel = vel ?? Vector2.Zero;
-                int handle = Projectile.NewProjectile(entitySource, pos, _vel, type, damage, knockback, Main.myPlayer, ai0, ai1);
-                if (handle >= Main.maxProjectiles) {
-                    return -1;
+                int handle = Projectile.NewProjectile(entitySource, pos, vel ?? Vector2.Zero, type, damage, knockback, Main.myPlayer, ai0, ai1);
+                if (handle < 0 || handle >= Main.maxProjectiles) {
+                    return null;
                 }
-                return handle;
+                return Main.projectile[handle];
             }
-            return -1;
+            return null;
         }
     }
 }
