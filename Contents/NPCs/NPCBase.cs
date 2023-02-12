@@ -162,7 +162,7 @@ namespace MyMod.Contents.NPCs {
 
         protected float rotCorrectionFactor;
         protected void RotCorrection(float target, float? deltaScale = null) {
-            Rotation = Utils.RotationCorrection(Rotation, target, deltaScale ?? rotCorrectionFactor);
+            Rotation = Utils.RotCorrection(Rotation, target, deltaScale ?? rotCorrectionFactor);
         }
         protected void RotStare(Vector2? target = null, float? deltaScale = null) {
             RotCorrection(Rot2(target ?? PlayerTarget.Center), deltaScale);

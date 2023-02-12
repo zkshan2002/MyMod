@@ -93,7 +93,6 @@ namespace MyMod.Contents {
     internal delegate bool ActFunc(int timer);
 
     internal static class Utils {
-        // Vector
         public static float L1Norm(Vector2 vector) {
             return Math.Abs(vector.X) + Math.Abs(vector.Y);
         }
@@ -103,7 +102,7 @@ namespace MyMod.Contents {
         public static Vector2 Radius(float theta, float rou = 1f) {
             return rou * Vector2.UnitX.RotatedBy(theta);
         }
-        // Rotation
+
         public static float ClipRad(float rad) {
             int div = (int)Math.Floor(rad / MathHelper.TwoPi);
             rad -= div * MathHelper.TwoPi;
@@ -126,7 +125,7 @@ namespace MyMod.Contents {
             }
             return value;
         }
-        public static float RotationCorrection(float rotation, float target, float deltaScale = 1f) {
+        public static float RotCorrection(float rotation, float target, float deltaScale = 1f) {
             float delta = MathHelper.TwoPi / 60 * deltaScale;
             rotation = ClipRad(rotation);
             target = ClipRad(target);
@@ -139,7 +138,7 @@ namespace MyMod.Contents {
             rotation = Correction(rotation, target, delta);
             return ClipRad(rotation);
         }
-        // Noise
+        
         public static int SignNoise() {
             return Main.rand.Next(2) * 2 - 1;
         }
@@ -159,7 +158,7 @@ namespace MyMod.Contents {
         public static Vector2 Vector2Noise(float scale) {
             return new Vector2(FloatNoise(scale), FloatNoise(scale));
         }
-        // Debug
+
         public static void DustBox(Vector2 topLeft, Vector2 size, Color? optionalColor = null) {
             Color color = optionalColor ?? Color.Red;
             Dust.QuickBox(topLeft, topLeft + size, 8, color, default);
@@ -203,13 +202,13 @@ namespace MyMod.Contents {
             dust.noGravity = noGravity;
             return handle;
         }
+
         public static void Swap<T>(ref T lhs, ref T rhs) {
             T temp;
             temp = lhs;
             lhs = rhs;
             rhs = temp;
         }
-        // Array
         public static void ShuffleArray<T>(ref T[] array) {
             int length = array.Length;
             var randomKeys = new float[length];
@@ -241,7 +240,7 @@ namespace MyMod.Contents {
             Main.NewText(str);
         }
 
-        // under refinement
+
 
         internal delegate bool PixelAction(Point point);
 

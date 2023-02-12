@@ -1,4 +1,4 @@
-﻿#define VANILLA_SPRITE
+﻿#define VANILLA_SPRITEx
 
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -1186,7 +1186,6 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
             }
 
             Timer++;
-            NPC.life = 300000;
         }
 
         public override bool CheckDead() {
@@ -1374,7 +1373,7 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
 #if !VANILLA_SPRITE
         private static Asset<Texture2D> glowAsset;
         public override void Load() {
-            glowAsset = ModContent.Request<Texture2D>($"{Workdir}/GlowMachineBrain");
+            glowAsset = ModContent.Request<Texture2D>($"{Workdir}/MachineBrainGlow");
         }
         public override void Unload() {
             glowAsset = null;

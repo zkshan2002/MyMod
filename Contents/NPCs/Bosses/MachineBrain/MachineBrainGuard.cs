@@ -893,7 +893,7 @@ namespace MyMod.Contents.NPCs.Bosses.MachineBrain {
 
         private static Asset<Texture2D> glowAsset;
         public override void Load() {
-            glowAsset = ModContent.Request<Texture2D>($"{Workdir}/GlowMachineBrainGuard");
+            glowAsset = ModContent.Request<Texture2D>($"{Workdir}/MachineBrainGuardGlow");
         }
         public override void Unload() {
             glowAsset = null;
